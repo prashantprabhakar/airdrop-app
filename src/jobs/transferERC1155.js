@@ -2,8 +2,7 @@
 const ERC1155 = require('../services/erc1155.service');
 const web3Svc= require('../services/web3.service');
 const disburseConfig = require('../config/disburse');
-
-
+const l = require('../services/logger.service')
 
 function veriyConfig() {
     if(!disburseConfig || !disburseConfig.erc1155) {
@@ -25,6 +24,7 @@ function veriyConfig() {
 
 module.exports = async() => {
     veriyConfig();
+    const adddressToHashMapping = {};
     const { contractAddress, from, recipientList, nftId, amount, privateKey } = disburseConfig.erc1155;
     const erc1155 = new ERC1155(contractAddress);
     const failedRequests = [];
@@ -41,6 +41,7 @@ module.exports = async() => {
                 metaData: {nonce}
             });
             console.log(`Processed from ${to}. Tx Hash: ${txHash}`);
+            adddressToHashMapping[to] = txHash;
             // Increment nonce only when transaction is a success
             nonce++;
         } catch(error) {
@@ -48,8 +49,11 @@ module.exports = async() => {
             failedRequests.push(to);
         }
     }
-    console.log("#########################################");
-    console.log(`TRansfer failed for following wallets`);
-    console.log(failedRequests);
+    l.info('Successsfully processed data', adddressToHashMapping);
+    console.log('\n')
+    l.error(`Transfer failed for following wallets`, failedRequests);
+    console.log("\n###############################");
+    console.log("Request failed for following wallets")
+    console.log(failedRequests)
     process.exit();
 }
